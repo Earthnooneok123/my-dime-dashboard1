@@ -59,7 +59,7 @@ try:
     # --- เพิ่ม Spiderman ไว้ใน Sidebar ตรงนี้ครับ ---
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🕸️ Spider-Man is watching!")
-    st.sidebar.image("https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZzR4ZWtqZzR4ZWtqZzR4ZWtqZzR4ZWtqZzR4ZWtqZzR4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/lT4IxS17J2Rz2/giphy.gif", width=200)
+    st.sidebar.image("https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3pjdW1vMmpvaXF1b3ByZ3lzcWJqOHkxbTZqM2pvaXF1b3ByZ3lzcyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Lq0h93752f6J9tijrh/giphy.gif", width=200)
     # -----------------------------------------------
 
     df_display = df[df["Category"] == selected_cat] if selected_cat != "ทั้งหมด" else df.copy()
