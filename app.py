@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 from PIL import Image
 from google import genai
+from google.genai import types
 import json
 
 # 1. ตั้งค่าหน้าเว็บ
@@ -29,8 +30,7 @@ st.divider()
 with st.sidebar:
     st.header("⚙️ ตั้งค่า & จัดการพอร์ต")
     
-    # ช่องใส่ API Key บนหน้าเว็บ
-    api_key_input = st.text_input("🔑 ใส่ Gemini API Key ของคุณ:", type="password", help="รับคีย์ได้จาก Google AI Studio")
+    api_key_input = st.text_input("🔑 ใส่ Gemini API Key ของคุณ:", type="password", help="วางคีย์ของคุณตรงนี้")
     
     st.divider()
     
@@ -44,7 +44,11 @@ with st.sidebar:
         
         def analyze_images_with_gemini(files, user_key):
             try:
-                client = genai.Client(api_key=user_key)
+                # ปรับแต่ง Client ให้รองรับทุกลักษณะ Key
+                client = genai.Client(
+                    api_key=user_key.strip(),
+                    http_options=types.HttpOptions(api_version='v1alpha')
+                )
                 images = [Image.open(file) for file in files]
                 
                 prompt = """
