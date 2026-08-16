@@ -42,7 +42,8 @@ with st.sidebar:
         
         def analyze_images_with_gemini(files):
             try:
-                client = genai.Client(api_key=GOOGLE_API_KEY)
+                api_key = st.secrets.get("GEMINI_API_KEY") or GOOGLE_API_KEY
+                client = genai.Client(api_key=api_key)
                 images = [Image.open(file) for file in files]
                 
                 prompt = """
