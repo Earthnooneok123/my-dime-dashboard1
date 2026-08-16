@@ -1,3 +1,4 @@
+import re
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -21,7 +22,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 🔗 ลิงก์ CSV จาก Google Sheets ของคุณ
+# 🔗 ลิงก์ CSV จาก Google Sheets
 SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7u4PJQHrPLgKoCb28f_C4C862tgiMWlXEYkxbjUfipmuKZVG6JhI2vQbMLFPRogMdoSu8v-4eO1k-/pub?gid=11095553&single=true&output=csv"
 
 
@@ -34,18 +35,30 @@ st.title("🚀 INVESTMENT DASHBOARD")
 st.caption("ดึงข้อมูลโดยตรงจาก Google Sheets อัปเดตเรียลไทม์")
 st.divider()
 
+
+# ฟังก์ชันแปลงข้อความที่มีสัญลักษณ์การเงินให้เป็นตัวเลข Float
+def clean_currency(val):
+  if pd.isna(val):
+    return 0.0
+  val_str = str(val)
+  # ลบสัญลักษณ์ ฿, $, คอมม่า (,), และช่องว่างออก
+  clean_str = re.sub(r"[฿\$,\s]", "", val_str)
+  try:
+    return float(clean_str)
+  except ValueError:
+    return 0.0
+
+
 try:
   df = load_data()
 
   # คัดกรองเอาเฉพาะแถวที่มีข้อมูลสินทรัพย์จริงๆ (ตัดแถว 'รวมทั้งหมด' หรือแถวว่างออก)
   df = df.dropna(subset=["Asset"])
-  df = df[
-      ~df["Asset"].str.contains("รวม", na=False)
-  ]  # ป้องกันแถวรวมสะสมกระทบการคำนวณ
+  df = df[~df["Asset"].str.contains("รวม", na=False)]
 
-  # แปลงคอลัมน์ตัวเลขให้แน่ใจว่าเป็น numeric
-  df["Value_THB"] = pd.to_numeric(df["Value_THB"], errors="coerce").fillna(0)
-  df["Profit_THB"] = pd.to_numeric(df["Profit_THB"], errors="coerce").fillna(0)
+  # ทำความสะอาดข้อมูลตัวเลข
+  df["Value_THB"] = df["Value_THB"].apply(clean_currency)
+  df["Profit_THB"] = df["Profit_THB"].apply(clean_currency)
 
   # คำนวณผลตอบแทน %
   df["Cost_THB"] = df["Value_THB"] - df["Profit_THB"]
@@ -129,7 +142,4 @@ try:
   )
 
 except Exception as e:
-  st.error(
-      f"เกิดข้อผิดพลาดในการโหลดข้อมูลจาก Google Sheets: {e}\nกรุณาตรวจสอบว่าเลือกเผยแพร่ไฟล์เป็นรูปแบบ"
-      " .csv หรือยังครับ"
-  )
+  st.error(f"เกิดข้อผิดพลาดในการโหลดข้อมูลจาก Google Sheets: {e}")
