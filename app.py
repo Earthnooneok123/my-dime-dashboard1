@@ -98,11 +98,20 @@ with st.sidebar:
       try:
         genai.configure(api_key=api_key.strip())
 
-        # ใช้ gemini-1.5-flash-8b หรือ gemini-1.5-pro ที่เสถียรและทำงานได้แน่นอน
-        try:
-          model = genai.GenerativeModel("gemini-1.5-flash-8b")
-        except Exception:
-          model = genai.GenerativeModel("gemini-1.5-pro")
+        # ดึงรายชื่อโมเดลทั้งหมดที่ API Key นี้ใช้งานได้จริงโดยตรงจาก Google
+        available_models = [
+            m.name
+            for m in genai.list_models()
+            if "generateContent" in m.supported_generation_methods
+        ]
+
+        if not available_models:
+          st.error("ไม่พบโมเดลที่รองรับใน API Key นี้")
+          return None
+
+        # เลือกโมเดลที่ใช้งานได้จริงอัตโนมัติ หมดปัญหา 404
+        selected_model_name = available_models[0]
+        model = genai.GenerativeModel(selected_model_name)
 
         images = [Image.open(file) for file in files]
 
