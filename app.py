@@ -12,9 +12,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. ระบุ API Key โดยตรงในโค้ด
-GOOGLE_API_KEY = "AQ.Ab8RN6JYIMsC_Tz9hBfg_vT4j9IK04YtqpCDZ2MuHBhhfKVg8w"
-
 if 'df' not in st.session_state:
     default_data = {
         'Asset': ['SP50001', 'NDX01', 'VOO', 'QQQI', 'QQQM', 'SCB', 'ICHI', 'MANU'],
@@ -28,9 +25,14 @@ st.title("🚀 GEMINI-POWERED INVESTMENT DASHBOARD")
 st.caption("AI วิเคราะห์รูปสลิป/หน้าจอ Dime! หลายรูปพร้อมกัน และอัปเดตตัวเลขแบบเรียลไทม์")
 st.divider()
 
-# 3. แถบด้านข้าง (Sidebar)
+# 2. แถบด้านข้าง (Sidebar)
 with st.sidebar:
-    st.header("⚙️ จัดการพอร์ตด้วย AI")
+    st.header("⚙️ ตั้งค่า & จัดการพอร์ต")
+    
+    # ช่องใส่ API Key บนหน้าเว็บ
+    api_key_input = st.text_input("🔑 ใส่ Gemini API Key ของคุณ:", type="password", help="รับคีย์ได้จาก Google AI Studio")
+    
+    st.divider()
     
     st.subheader("📸 อัปโหลดรูปภาพหลายรูปพร้อมกัน")
     uploaded_files = st.file_uploader("เลือกรูปภาพสลิป/หน้าจอพอร์ต Dime!", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
@@ -40,10 +42,9 @@ with st.sidebar:
     if uploaded_files:
         st.write(f"พบ {len(uploaded_files)} รูปภาพ...")
         
-        def analyze_images_with_gemini(files):
+        def analyze_images_with_gemini(files, user_key):
             try:
-                # ส่ง API Key ตรงๆ ให้ระบบ
-                client = genai.Client(api_key=GOOGLE_API_KEY)
+                client = genai.Client(api_key=user_key)
                 images = [Image.open(file) for file in files]
                 
                 prompt = """
@@ -74,20 +75,23 @@ with st.sidebar:
                 return None
 
         if st.button("🧠 ให้ AI วิเคราะห์รูปภาพและอัปเดตพอร์ต"):
-            with st.spinner("กำลังให้ AI วิเคราะห์รูปภาพทั้งหมด..."):
-                analysis_results = analyze_images_with_gemini(uploaded_files)
-                if analysis_results:
-                    df_current = st.session_state.df
-                    for result in analysis_results:
-                        asset_name = result.get('Asset', '')
-                        matched_rows = df_current[df_current['Asset'].str.upper() == asset_name.upper()]
-                        if not matched_rows.empty:
-                            row_index = matched_rows.index[0]
-                            df_current.loc[row_index, 'Value_THB'] = float(result['Value_THB'])
-                            df_current.loc[row_index, 'Profit_THB'] = float(result['Profit_THB'])
-                    
-                    st.session_state.df = df_current
-                    st.success("อัปเดตตัวเลขตามรูปภาพเรียบร้อยแล้ว!")
+            if not api_key_input:
+                st.warning("⚠️ กรุณาใส่ Gemini API Key ในช่องด้านบนก่อนครับ")
+            else:
+                with st.spinner("กำลังให้ AI วิเคราะห์รูปภาพทั้งหมด..."):
+                    analysis_results = analyze_images_with_gemini(uploaded_files, api_key_input)
+                    if analysis_results:
+                        df_current = st.session_state.df
+                        for result in analysis_results:
+                            asset_name = result.get('Asset', '')
+                            matched_rows = df_current[df_current['Asset'].str.upper() == asset_name.upper()]
+                            if not matched_rows.empty:
+                                row_index = matched_rows.index[0]
+                                df_current.loc[row_index, 'Value_THB'] = float(result['Value_THB'])
+                                df_current.loc[row_index, 'Profit_THB'] = float(result['Profit_THB'])
+                        
+                        st.session_state.df = df_current
+                        st.success("อัปเดตตัวเลขตามรูปภาพเรียบร้อยแล้ว!")
 
     st.divider()
     
@@ -103,7 +107,7 @@ with st.sidebar:
     )
     st.session_state.df = edited_df
 
-# 4. ส่วนแสดงผลหลัก
+# 3. ส่วนแสดงผลหลัก
 df = st.session_state.df.copy()
 df['Profit_Pct'] = (df['Profit_THB'] / (df['Value_THB'] - df['Profit_THB'])) * 100
 
@@ -129,7 +133,7 @@ if uploaded_files:
             st.image(image, caption=f"รูปที่ {i+1}", use_container_width=True)
     st.divider()
 
-# 5. กราฟ
+# 4. กราฟ
 c1, c2 = st.columns(2)
 
 with c1:
