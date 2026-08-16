@@ -55,6 +55,13 @@ try:
 
     categories = ["ทั้งหมด"] + list(df["Category"].dropna().unique())
     selected_cat = st.sidebar.selectbox("เลือกหมวดหมู่:", categories)
+
+    # --- เพิ่ม Spiderman ไว้ใน Sidebar ตรงนี้ครับ ---
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🕸️ Spider-Man is watching!")
+    st.sidebar.image("https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqZzR4ZWtqZzR4ZWtqZzR4ZWtqZzR4ZWtqZzR4ZWtqZzR4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/lT4IxS17J2Rz2/giphy.gif", width=200)
+    # -----------------------------------------------
+
     df_display = df[df["Category"] == selected_cat] if selected_cat != "ทั้งหมด" else df.copy()
 
     # Calculation
