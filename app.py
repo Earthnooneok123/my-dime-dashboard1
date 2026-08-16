@@ -5,113 +5,74 @@ import plotly.express as px
 import streamlit as st
 
 # ตั้งค่าหน้าตา Dashboard
-st.set_page_config(
-    page_title="Pixel Virtual Office Dashboard",
-    page_icon="🕹️",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+st.set_page_config(page_title="AI Virtual Office", page_icon="🏢", layout="wide")
 
-# Custom CSS ตกแต่งออฟฟิศให้ดูเท่
-st.markdown(
-    """
+# CSS จัดโซนโต๊ะทำงาน
+st.markdown("""
     <style>
-    .main .block-container { padding-top: 1rem; }
-    div[data-testid="stMetricValue"] { font-size: 1.8rem; font-weight: bold; }
-    .office-banner { border-radius: 12px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    .office-zone { background-color: #f0f2f6; padding: 20px; border-radius: 15px; border: 2px solid #ddd; margin-bottom: 20px; }
+    .stMetric { background-color: white; padding: 10px; border-radius: 10px; box-shadow: 2px 2px 5px #ccc; }
     </style>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 
-# 🔗 ลิงก์ CSV จาก Google Sheets
+# ฟังก์ชันข้อมูล
 SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7u4PJQHrPLgKoCb28f_C4C862tgiMWlXEYkxbjUfipmuKZVG6JhI2vQbMLFPRogMdoSu8v-4eO1k-/pub?gid=11095553&single=true&output=csv"
 
 @st.cache_data(ttl=60)
-def load_data():
-    return pd.read_csv(SHEET_URL)
+def load_data(): return pd.read_csv(SHEET_URL)
 
 def clean_currency(val):
     if pd.isna(val): return 0.0
-    val_str = str(val)
-    clean_str = re.sub(r"[฿\$,\s]", "", val_str)
-    try: return float(clean_str)
-    except ValueError: return 0.0
+    return float(re.sub(r"[฿\$,\s]", "", str(val)))
 
 try:
     df = load_data()
     df = df.dropna(subset=["Asset"])
-    df = df[~df["Asset"].str.contains("รวม", na=False)]
-
     df["Value_THB"] = df["Value_THB"].apply(clean_currency)
     df["Profit_THB"] = df["Profit_THB"].apply(clean_currency)
     df["Cost_THB"] = df["Value_THB"] - df["Profit_THB"]
     df["Profit_Pct"] = df.apply(lambda r: (r["Profit_THB"] / r["Cost_THB"] * 100) if r["Cost_THB"] != 0 else 0, axis=1)
 
-    # Sidebar: Boss Room
-    st.sidebar.header("⚙️ BOSS CONTROL ROOM")
-    if st.sidebar.button("🔄 อัปเดตข้อมูลสำนักงาน"):
-        st.cache_data.clear()
-        st.rerun()
-
-    categories = ["ทั้งหมด"] + list(df["Category"].dropna().unique())
-    selected_cat = st.sidebar.selectbox("🗂️ เลือกแผนก/หมวดหมู่:", categories)
-
+    # Sidebar
+    st.sidebar.title("🏢 BOSS CONTROL")
+    st.sidebar.image("https://media.giphy.com/media/xTiTnHvXHHxOTcdmxO/giphy.gif", width=150)
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🛡️ Security Guard")
-    st.sidebar.image("https://media.giphy.com/media/xTiTnHvXHHxOTcdmxO/giphy.gif", width=200)
+    selected_cat = st.sidebar.selectbox("เลือกโซนงาน:", ["ทั้งหมด"] + list(df["Category"].dropna().unique()))
 
-    df_display = df[df["Category"] == selected_cat] if selected_cat != "ทั้งหมด" else df.copy()
-
-    # Calculation
-    total_value = df_display["Value_THB"].sum()
-    total_profit = df_display["Profit_THB"].sum()
-    total_cost = total_value - total_profit
-    total_return = (total_profit / total_cost * 100) if total_cost != 0 else 0
-
-    # Content
-    st.title("🕹️ PIXEL VIRTUAL OFFICE HQ")
-    st.caption(f"🕒 อัปเดตล่าสุด: {datetime.now().strftime('%d %b %Y, %H:%M')}")
-    st.divider()
-
-    # 🏢 แบนเนอร์ห้องทำงาน Pixel Art แบบตรงปก!
-    st.markdown(
-        """
-        <div class="office-banner">
-            <img src="https://media.giphy.com/media/Lq0h93752f6J9tijrh/giphy.gif" style="width: 100%; height: 300px; object-fit: cover;">
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Metrics
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("มูลค่าพอร์ตรวม", f"฿{total_value:,.2f}")
-    c2.metric("เงินต้นรวม", f"฿{total_cost:,.2f}")
-    c3.metric("กำไร/ขาดทุนรวม", f"฿{total_profit:,.2f}", f"{total_return:.2f}%")
-    c4.metric("บรรยากาศพอร์ต", "🟢 เขียวขจี" if total_profit >= 0 else "🔴 แดงเดือด")
+    # หน้าหลัก
+    st.title("💻 AI Virtual Office HQ")
+    
+    # แบ่งโซนทำงาน (เหมือนภาพเรฟ)
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.subheader("🛠️ Dev Agent Zone")
+        st.write("สถานะ: กำลัง Optimization ระบบพอร์ต")
+        st.metric("Total Assets", f"฿{df['Value_THB'].sum():,.0f}")
+        
+    with col2:
+        st.subheader("📊 Research Agent Zone")
+        st.write("สถานะ: วิเคราะห์แนวโน้มตลาด...")
+        if not df.empty:
+            top = df.loc[df['Profit_Pct'].idxmax()]
+            st.success(f"Best: {top['Asset']} (+{top['Profit_Pct']:.1f}%)")
+            
+    with col3:
+        st.subheader("🛡️ Security Agent Zone")
+        st.write("สถานะ: ปกป้องพอร์ต (Spider-Man Ready)")
+        st.metric("Profit", f"฿{df['Profit_THB'].sum():,.0f}")
 
     st.divider()
 
-    # Charts
+    # กราฟ
     chart1, chart2 = st.columns(2)
     with chart1:
-        st.subheader("📊 สัดส่วนสินทรัพย์ในออฟฟิศ")
-        fig_pie = px.pie(df_display, values="Value_THB", names="Asset", hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
-        st.plotly_chart(fig_pie, use_container_width=True)
+        st.plotly_chart(px.pie(df, values="Value_THB", names="Asset", title="Asset Allocation"), use_container_width=True)
     with chart2:
-        st.subheader("📈 ผลตอบแทน %")
-        df_display["Color"] = df_display["Profit_Pct"].apply(lambda x: "#10B981" if x >= 0 else "#EF4444")
-        fig_bar = px.bar(df_display, x="Asset", y="Profit_Pct", text_auto=".2f", color="Color", color_discrete_map="identity")
-        st.plotly_chart(fig_bar, use_container_width=True)
+        st.plotly_chart(px.bar(df, x="Asset", y="Profit_Pct", title="Performance per Asset"), use_container_width=True)
 
-    # Table
-    st.subheader("📋 บันทึกข้อมูลสินทรัพย์")
-    st.dataframe(df_display[["Asset", "Category", "Value_THB", "Profit_THB", "Profit_Pct"]], 
-                 column_config={"Value_THB": st.column_config.NumberColumn(format="฿%.2f"),
-                                "Profit_THB": st.column_config.NumberColumn(format="฿%.2f"),
-                                "Profit_Pct": st.column_config.NumberColumn(format="%.2f%%")}, 
-                 use_container_width=True, hide_index=True)
+    st.subheader("📋 ตารางบันทึกงาน")
+    st.dataframe(df[["Asset", "Category", "Value_THB", "Profit_Pct"]], use_container_width=True)
 
 except Exception as e:
-    st.error(f"เกิดข้อผิดพลาดในระบบสำนักงาน: {e}")
+    st.error("ออฟฟิศยังไม่เปิดทำการ: " + str(e))
