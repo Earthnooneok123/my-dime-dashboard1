@@ -125,16 +125,15 @@ col3.metric("กำไร/ขาดทุนรวม", f"฿{total_profit:,.2f}
 col4.metric("บรรยากาศพอร์ต", "🟢 เขียวขจี" if total_profit > 0 else "🔴 แดงเดือด")
 
 st.divider()
-
 if uploaded_files:
     st.subheader(f"🖼️ รูปภาพที่อัปโหลดล่าสุด ({len(uploaded_files)} รูป)")
-    col_img = st.columns(min(len(uploaded_files), 4)) # แสดงรูปละคอลัมน์
+    col_img = st.columns(min(len(uploaded_files), 4))
     for i, file in enumerate(uploaded_files):
         with col_img[i % 4]:
             image = Image.open(file)
-           st.image(image, caption=f"รูปที่ {i+1}", use_column_width=True)
+            st.image(image, caption=f"รูปที่ {i+1}", use_container_width=True)
     st.divider()
-
+  
 # --- กราฟ ---
 c1, c2 = st.columns(2)
 
