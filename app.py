@@ -12,8 +12,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. ดึง API Key จาก Streamlit Secrets
-GOOGLE_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
+# 2. ระบุ API Key โดยตรงในโค้ด
+GOOGLE_API_KEY = "AQ.Ab8RN6JYIMsC_Tz9hBfg_vT4j9IK04YtqpCDZ2MuHBhhfKVg8w"
 
 if 'df' not in st.session_state:
     default_data = {
@@ -42,8 +42,8 @@ with st.sidebar:
         
         def analyze_images_with_gemini(files):
             try:
-                api_key = st.secrets.get("GEMINI_API_KEY") or GOOGLE_API_KEY
-                client = genai.Client(api_key=api_key)
+                # ส่ง API Key ตรงๆ ให้ระบบ
+                client = genai.Client(api_key=GOOGLE_API_KEY)
                 images = [Image.open(file) for file in files]
                 
                 prompt = """
@@ -80,7 +80,6 @@ with st.sidebar:
                     df_current = st.session_state.df
                     for result in analysis_results:
                         asset_name = result.get('Asset', '')
-                        # ค้นหาชื่อสินทรัพย์ที่ตรงกัน
                         matched_rows = df_current[df_current['Asset'].str.upper() == asset_name.upper()]
                         if not matched_rows.empty:
                             row_index = matched_rows.index[0]
