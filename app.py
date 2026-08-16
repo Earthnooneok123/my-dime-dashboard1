@@ -15,7 +15,7 @@ st.set_page_config(
 
 # 2. ระบุ OpenAI API Key ในโค้ดโดยตรง
 # ⚠️ เปลี่ยนใส่ OpenAI API Key ชุดใหม่ของคุณตรงนี้
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = "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"
 
 if 'df' not in st.session_state:
     default_data = {
