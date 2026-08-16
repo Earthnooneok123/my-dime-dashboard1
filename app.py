@@ -51,11 +51,18 @@ with st.sidebar:
             try:
                 genai.configure(api_key=api_key.strip())
                 
-                # ใช้ gemini-1.5-flash-latest หรือ gemini-1.5-pro เป็น fallback
-                try:
-                    model = genai.GenerativeModel('gemini-1.5-flash-latest')
-                except:
-                    model = genai.GenerativeModel('gemini-1.5-pro')
+                # ค้นหาโมเดลที่ใช้งานได้จริงใน API Key นี้แบบอัตโนมัติ
+                available_models = [
+                    m.name for m in genai.list_models() 
+                    if 'generateContent' in m.supported_generation_methods and 'flash' in m.name
+                ]
+                
+                if available_models:
+                    model_name = available_models[0]
+                else:
+                    model_name = 'gemini-1.5-flash'
+                
+                model = genai.GenerativeModel(model_name)
                 
                 images = [Image.open(file) for file in files]
                 
