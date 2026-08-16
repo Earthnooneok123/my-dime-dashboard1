@@ -13,9 +13,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. ระบุ OpenAI API Key ในโค้ดโดยตรง
-OPENAI_API_KEY = "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"
-
 if 'df' not in st.session_state:
     default_data = {
         'Asset': ['SP50001', 'NDX01', 'VOO', 'QQQI', 'QQQM', 'SCB', 'ICHI', 'MANU'],
@@ -33,9 +30,20 @@ st.divider()
 def encode_image(file):
     return base64.b64encode(file.getvalue()).decode('utf-8')
 
-# 3. แถบด้านข้าง (Sidebar)
+# 2. แถบด้านข้าง (Sidebar)
 with st.sidebar:
     st.header("⚙️ จัดการพอร์ตด้วย AI")
+    
+    # เช็กว่ามี Key ใน Secrets หรือไม่ ถ้าไม่มีให้กรอกเอง
+    api_key_from_secrets = st.secrets.get("OPENAI_API_KEY", "")
+    
+    if api_key_from_secrets:
+        st.success("🔑 เชื่อมต่อ OpenAI API Key แล้ว")
+        user_key = api_key_from_secrets
+    else:
+        user_key = st.text_input("🔑 กรอก OpenAI API Key (sk-...):", type="password", help="ใส่ Key ที่สร้างจาก OpenAI")
+
+    st.divider()
     
     st.subheader("📸 อัปโหลดรูปภาพหลายรูปพร้อมกัน")
     uploaded_files = st.file_uploader("เลือกรูปภาพสลิป/หน้าจอพอร์ต Dime!", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
@@ -92,11 +100,11 @@ with st.sidebar:
                 return None
 
         if st.button("🧠 ให้ AI วิเคราะห์รูปภาพและอัปเดตพอร์ต"):
-            if not OPENAI_API_KEY:
-                st.warning("⚠️ กรุณาใส่ OpenAI API Key ก่อนใช้งานครับ")
+            if not user_key:
+                st.warning("⚠️ กรุณากรอก OpenAI API Key ด้านบนก่อนครับ")
             else:
                 with st.spinner("กำลังให้ OpenAI วิเคราะห์รูปภาพทั้งหมด..."):
-                    analysis_results = analyze_images_with_openai(uploaded_files, OPENAI_API_KEY)
+                    analysis_results = analyze_images_with_openai(uploaded_files, user_key)
                     if analysis_results:
                         df_current = st.session_state.df
                         for result in analysis_results:
@@ -124,7 +132,7 @@ with st.sidebar:
     )
     st.session_state.df = edited_df
 
-# 4. ส่วนแสดงผลหลัก
+# 3. ส่วนแสดงผลหลัก
 df = st.session_state.df.copy()
 df['Profit_Pct'] = (df['Profit_THB'] / (df['Value_THB'] - df['Profit_THB'])) * 100
 
@@ -150,7 +158,7 @@ if uploaded_files:
             st.image(image, caption=f"รูปที่ {i+1}", use_container_width=True)
     st.divider()
 
-# 5. กราฟ
+# 4. กราฟ
 c1, c2 = st.columns(2)
 
 with c1:
