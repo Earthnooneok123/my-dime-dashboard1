@@ -6,17 +6,13 @@ import google.generativeai as genai
 import yfinance as yf
 from datetime import datetime
 
-# 1. ตั้งค่าหน้าเว็บ
 st.set_page_config(
     page_title="Gemini-Powered Investment Dashboard",
     page_icon="📈",
     layout="wide"
 )
 
-# --- ส่วนสำคัญ: เชื่อมต่อ AI (Gemini) และกำหนดค่า Session State ---
-# เราจะใช้ API Key เพื่อคุยกับ Gemini (ควรเก็บเป็นความลับ แต่เพื่อความสะดวกสำหรับการทดสอบจะใส่ไว้ที่นี่)
-# *แนะนำให้คุณไปสมัคร Gemini API Key เองทีหลังเพื่อความปลอดภัย*
-GOOGLE_API_KEY = "YOUR_GEMINI_API_KEY_HERE" # <--- ใส่ API Key ของคุณที่นี่
+GOOGLE_API_KEY = "AQ.Ab8RN6KhuiDCupxmizhACXEzoqs7ZSGoHdbua4P0GAMpGVgV6A"
 
 if 'df' not in st.session_state:
     default_data = {
