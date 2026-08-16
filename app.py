@@ -49,9 +49,13 @@ with st.sidebar:
         
         def analyze_images_with_gemini(files, api_key):
             try:
-                # กำหนดค่า API Key และเรียกใช้โมเดล
                 genai.configure(api_key=api_key.strip())
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                
+                # ใช้ gemini-1.5-flash-latest หรือ gemini-1.5-pro เป็น fallback
+                try:
+                    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+                except:
+                    model = genai.GenerativeModel('gemini-1.5-pro')
                 
                 images = [Image.open(file) for file in files]
                 
