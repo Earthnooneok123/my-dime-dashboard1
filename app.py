@@ -1,8 +1,8 @@
 import re
+from datetime import datetime
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from datetime import datetime
 
 # ตั้งค่าหน้าตา Dashboard
 st.set_page_config(
@@ -26,94 +26,140 @@ st.markdown(
 # 🔗 ลิงก์ CSV จาก Google Sheets
 SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7u4PJQHrPLgKoCb28f_C4C862tgiMWlXEYkxbjUfipmuKZVG6JhI2vQbMLFPRogMdoSu8v-4eO1k-/pub?gid=11095553&single=true&output=csv"
 
+
 @st.cache_data(ttl=60)
 def load_data():
-    return pd.read_csv(SHEET_URL)
+  return pd.read_csv(SHEET_URL)
+
 
 def clean_currency(val):
-    if pd.isna(val): return 0.0
-    val_str = str(val)
-    clean_str = re.sub(r"[฿\$,\s]", "", val_str)
-    try: return float(clean_str)
-    except ValueError: return 0.0
+  if pd.isna(val):
+    return 0.0
+  val_str = str(val)
+  clean_str = re.sub(r"[฿\$,\s]", "", val_str)
+  try:
+    return float(clean_str)
+  except ValueError:
+    return 0.0
+
 
 try:
-    df = load_data()
-    df = df.dropna(subset=["Asset"])
-    df = df[~df["Asset"].str.contains("รวม", na=False)]
+  df = load_data()
+  df = df.dropna(subset=["Asset"])
+  df = df[~df["Asset"].str.contains("รวม", na=False)]
 
-    df["Value_THB"] = df["Value_THB"].apply(clean_currency)
-    df["Profit_THB"] = df["Profit_THB"].apply(clean_currency)
-    df["Cost_THB"] = df["Value_THB"] - df["Profit_THB"]
-    df["Profit_Pct"] = df.apply(lambda r: (r["Profit_THB"] / r["Cost_THB"] * 100) if r["Cost_THB"] != 0 else 0, axis=1)
+  df["Value_THB"] = df["Value_THB"].apply(clean_currency)
+  df["Profit_THB"] = df["Profit_THB"].apply(clean_currency)
+  df["Cost_THB"] = df["Value_THB"] - df["Profit_THB"]
+  df["Profit_Pct"] = df.apply(
+      lambda r: (r["Profit_THB"] / r["Cost_THB"] * 100)
+      if r["Cost_THB"] != 0
+      else 0,
+      axis=1,
+  )
 
-    # Sidebar
-    st.sidebar.header("⚙️ ตั้งค่า & คัดกรอง")
-    if st.sidebar.button("🔄 อัปเดตข้อมูลทันที"):
-        st.cache_data.clear()
-        st.rerun()
+  # Sidebar
+  st.sidebar.header("⚙️ ตั้งค่า & คัดกรอง")
+  if st.sidebar.button("🔄 อัปเดตข้อมูลทันที"):
+    st.cache_data.clear()
+    st.rerun()
 
-    categories = ["ทั้งหมด"] + list(df["Category"].dropna().unique())
-    selected_cat = st.sidebar.selectbox("เลือกหมวดหมู่:", categories)
+  categories = ["ทั้งหมด"] + list(df["Category"].dropna().unique())
+  selected_cat = st.sidebar.selectbox("เลือกหมวดหมู่:", categories)
 
-    # --- เพิ่ม Spiderman ไว้ใน Sidebar ตรงนี้ครับ ---
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🕸️ Spider-Man is watching!")
-    st.sidebar.image("https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3pjdW1vMmpvaXF1b3ByZ3lzcWJqOHkxbTZqM2pvaXF1b3ByZ3lzcyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Lq0h93752f6J9tijrh/giphy.gif", width=200)
-    # -----------------------------------------------
+  # --- Spiderman ใน Sidebar (ดึงจากลิงก์ที่คุณเลือกมา) ---
+  st.sidebar.markdown("---")
+  st.sidebar.markdown("### 🕸️ Spider-Man is watching!")
+  # ใช้ลิงก์ที่ถูกต้องและสมบูรณ์เพื่อให้แสดงผลได้แน่นอน
+  st.sidebar.image(
+      "https://media.giphy.com/media/xTiTnHvXHHxOTcdmxO/giphy.gif", width=200
+  )
+  # -----------------------------------------------
 
-    df_display = df[df["Category"] == selected_cat] if selected_cat != "ทั้งหมด" else df.copy()
+  df_display = (
+      df[df["Category"] == selected_cat]
+      if selected_cat != "ทั้งหมด"
+      else df.copy()
+  )
 
-    # Calculation
-    total_value = df_display["Value_THB"].sum()
-    total_profit = df_display["Profit_THB"].sum()
-    total_cost = total_value - total_profit
-    total_return = (total_profit / total_cost * 100) if total_cost != 0 else 0
+  # Calculation
+  total_value = df_display["Value_THB"].sum()
+  total_profit = df_display["Profit_THB"].sum()
+  total_cost = total_value - total_profit
+  total_return = (total_profit / total_cost * 100) if total_cost != 0 else 0
 
-    # Content
-    st.title("🚀 INVESTMENT DASHBOARD")
-    st.caption(f"🕒 ข้อมูลล่าสุด: {datetime.now().strftime('%d %b %Y, %H:%M')}")
-    st.divider()
+  # Content
+  st.title("🚀 INVESTMENT DASHBOARD")
+  st.caption(f"🕒 ข้อมูลล่าสุด: {datetime.now().strftime('%d %b %Y, %H:%M')}")
+  st.divider()
 
-    # Progress
-    GOAL_AMOUNT = 500000.0
-    progress_pct = min(total_value / GOAL_AMOUNT, 1.0)
-    st.subheader("🎯 เป้าหมายพอร์ตระยะยาว (500,000 บาท)")
-    st.progress(progress_pct)
-    st.caption(f"ความคืบหน้า: {progress_pct*100:.2f}% (ขาดอีก ฿{max(GOAL_AMOUNT - total_value, 0):,.2f} บาท)")
-    st.divider()
+  # Progress
+  GOAL_AMOUNT = 500000.0
+  progress_pct = min(total_value / GOAL_AMOUNT, 1.0)
+  st.subheader("🎯 เป้าหมายพอร์ตระยะยาว (500,000 บาท)")
+  st.progress(progress_pct)
+  st.caption(
+      f"ความคืบหน้า: {progress_pct*100:.2f}% (ขาดอีก"
+      f" ฿{max(GOAL_AMOUNT - total_value, 0):,.2f} บาท)"
+  )
+  st.divider()
 
-    # Metrics
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("มูลค่าพอร์ตรวม", f"฿{total_value:,.2f}")
-    c2.metric("เงินต้นรวม", f"฿{total_cost:,.2f}")
-    c3.metric("กำไร/ขาดทุนรวม", f"฿{total_profit:,.2f}", f"{total_return:.2f}%")
-    c4.metric("บรรยากาศพอร์ต", "🟢 เขียวขจี" if total_profit >= 0 else "🔴 แดงเดือด")
+  # Metrics
+  c1, c2, c3, c4 = st.columns(4)
+  c1.metric("มูลค่าพอร์ตรวม", f"฿{total_value:,.2f}")
+  c2.metric("เงินต้นรวม", f"฿{total_cost:,.2f}")
+  c3.metric("กำไร/ขาดทุนรวม", f"฿{total_profit:,.2f}", f"{total_return:.2f}%")
+  c4.metric(
+      "บรรยากาศพอร์ต", "🟢 เขียวขจี" if total_profit >= 0 else "🔴 แดงเดือด"
+  )
 
-    # Top Performer
-    if not df_display.empty:
-        top_asset = df_display.loc[df_display["Profit_Pct"].idxmax()]
-        st.info(f"🏆 **ตัวแบกพอร์ต:** {top_asset['Asset']} (+{top_asset['Profit_Pct']:.2f}%)")
+  # Top Performer
+  if not df_display.empty:
+    top_asset = df_display.loc[df_display["Profit_Pct"].idxmax()]
+    st.info(
+        f"🏆 **ตัวแบกพอร์ต:** {top_asset['Asset']}"
+        f" (+{top_asset['Profit_Pct']:.2f}%)"
+    )
 
-    # Charts
-    chart1, chart2 = st.columns(2)
-    with chart1:
-        st.subheader("📊 สัดส่วนพอร์ต")
-        fig_pie = px.pie(df_display, values="Value_THB", names="Asset", hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
-        st.plotly_chart(fig_pie, use_container_width=True)
-    with chart2:
-        st.subheader("📈 ผลตอบแทน %")
-        df_display["Color"] = df_display["Profit_Pct"].apply(lambda x: "#10B981" if x >= 0 else "#EF4444")
-        fig_bar = px.bar(df_display, x="Asset", y="Profit_Pct", text_auto=".2f", color="Color", color_discrete_map="identity")
-        st.plotly_chart(fig_bar, use_container_width=True)
+  # Charts
+  chart1, chart2 = st.columns(2)
+  with chart1:
+    st.subheader("📊 สัดส่วนพอร์ต")
+    fig_pie = px.pie(
+        df_display,
+        values="Value_THB",
+        names="Asset",
+        hole=0.4,
+        color_discrete_sequence=px.colors.qualitative.Pastel,
+    )
+    st.plotly_chart(fig_pie, use_container_width=True)
+  with chart2:
+    st.subheader("📈 ผลตอบแทน %")
+    df_display["Color"] = df_display["Profit_Pct"].apply(
+        lambda x: "#10B981" if x >= 0 else "#EF4444"
+    )
+    fig_bar = px.bar(
+        df_display,
+        x="Asset",
+        y="Profit_Pct",
+        text_auto=".2f",
+        color="Color",
+        color_discrete_map="identity",
+    )
+    st.plotly_chart(fig_bar, use_container_width=True)
 
-    # Table
-    st.subheader("📋 รายละเอียดสินทรัพย์")
-    st.dataframe(df_display[["Asset", "Category", "Value_THB", "Profit_THB", "Profit_Pct"]], 
-                 column_config={"Value_THB": st.column_config.NumberColumn(format="฿%.2f"),
-                                "Profit_THB": st.column_config.NumberColumn(format="฿%.2f"),
-                                "Profit_Pct": st.column_config.NumberColumn(format="%.2f%%")}, 
-                 use_container_width=True, hide_index=True)
+  # Table
+  st.subheader("📋 รายละเอียดสินทรัพย์")
+  st.dataframe(
+      df_display[["Asset", "Category", "Value_THB", "Profit_THB", "Profit_Pct"]],
+      column_config={
+          "Value_THB": st.column_config.NumberColumn(format="฿%.2f"),
+          "Profit_THB": st.column_config.NumberColumn(format="฿%.2f"),
+          "Profit_Pct": st.column_config.NumberColumn(format="%.2f%%"),
+      },
+      use_container_width=True,
+      hide_index=True,
+  )
 
 except Exception as e:
-    st.error(f"เกิดข้อผิดพลาด: {e}")
+  st.error(f"เกิดข้อผิดพลาด: {e}")
