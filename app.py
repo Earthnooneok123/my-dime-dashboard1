@@ -132,7 +132,7 @@ if uploaded_files:
     for i, file in enumerate(uploaded_files):
         with col_img[i % 4]:
             image = Image.open(file)
-            st.image(image, caption=f"รูปที่ {i+1}", use_column_width=True)
+           st.image(image, caption=f"รูปที่ {i+1}", use_column_width=True)
     st.divider()
 
 # --- กราฟ ---
