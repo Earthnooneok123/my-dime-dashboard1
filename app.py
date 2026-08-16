@@ -2,17 +2,18 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from PIL import Image
-import google.generativeai as genai
-import yfinance as yf
-from datetime import datetime
+from google import genai
+import json
 
+# 1. ตั้งค่าหน้าเว็บ
 st.set_page_config(
     page_title="Gemini-Powered Investment Dashboard",
     page_icon="📈",
     layout="wide"
 )
 
-GOOGLE_API_KEY = "AQ.Ab8RN6KhuiDCupxmizhACXEzoqs7ZSGoHdbua4P0GAMpGVgV6A"
+# 2. ดึง API Key จาก Streamlit Secrets
+GOOGLE_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 
 if 'df' not in st.session_state:
     default_data = {
@@ -27,12 +28,11 @@ st.title("🚀 GEMINI-POWERED INVESTMENT DASHBOARD")
 st.caption("AI วิเคราะห์รูปสลิป/หน้าจอ Dime! หลายรูปพร้อมกัน และอัปเดตตัวเลขแบบเรียลไทม์")
 st.divider()
 
-# --- ส่วนแถบข้าง (Sidebar) ---
+# 3. แถบด้านข้าง (Sidebar)
 with st.sidebar:
     st.header("⚙️ จัดการพอร์ตด้วย AI")
     
     st.subheader("📸 อัปโหลดรูปภาพหลายรูปพร้อมกัน")
-    # เปลี่ยนเป็น multiple files
     uploaded_files = st.file_uploader("เลือกรูปภาพสลิป/หน้าจอพอร์ต Dime!", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
     
     st.divider()
@@ -40,31 +40,29 @@ with st.sidebar:
     if uploaded_files:
         st.write(f"พบ {len(uploaded_files)} รูปภาพ...")
         
-        # ฟังก์ชันให้ AI วิเคราะห์
         def analyze_images_with_gemini(files):
-            images = [Image.open(file) for file in files]
-            
-            genai.configure(api_key=GOOGLE_API_KEY)
-            model = genai.GenerativeModel('gemini-1.5-flash-latest') # หรือ gemini-pro-vision
-            
-            prompt = """
-            วิเคราะห์รูปภาพสลิปหรือหน้าจอพอร์ต Dime! ทั้งหมดเหล่านี้ (ถ้ามีหลายรูป) และดึงข้อมูลสำคัญตามตารางด้านล่างนี้ออกมาเป็น JSON:
-            1. ชื่อสินทรัพย์ (Asset Name เช่น VOO, QQQM, หรือกองทุนไทย)
-            2. มูลค่าปัจจุบัน (Current Value เป็น THB เสมอ)
-            3. กำไร/ขาดทุนปัจจุบัน (Profit/Loss เป็น THB)
-
-            สรุปผลทั้งหมดเป็น JSON ให้อยู่ในรูปแบบนี้:
-            [
-              {"Asset": "VOO", "Value_THB": 15000.50, "Profit_THB": 1200.00},
-              {"Asset": "SP50001", "Value_THB": 8500.00, "Profit_THB": -200.00}
-            ]
-            ถ้าหาข้อมูลตัวไหนไม่เจอ ให้ใส่ค่าเป็น 0.00 อย่าเดาตัวเลข
-            """
-            
             try:
-                response = model.generate_content([prompt] + images)
-                # ผมจะดึงเฉพาะส่วนที่เป็น JSON ออกมา
-                import json
+                client = genai.Client(api_key=GOOGLE_API_KEY)
+                images = [Image.open(file) for file in files]
+                
+                prompt = """
+                วิเคราะห์รูปภาพสลิปหรือหน้าจอพอร์ต Dime! ทั้งหมดนี้ และดึงข้อมูลมูลค่ากับกำไร/ขาดทุนของสินทรัพย์แต่ละตัวออกมาเป็น JSON:
+                1. Asset: ชื่อสินทรัพย์ (เช่น SP50001, NDX01, VOO, SCB, ICHI, MANU)
+                2. Value_THB: มูลค่าปัจจุบัน (เป็นตัวเลข THB เท่านั้น)
+                3. Profit_THB: กำไร/ขาดทุน (เป็นตัวเลข THB ถ้าขาดทุนให้ติดลบ)
+
+                ส่งคืนผลลัพธ์เป็นโครงสร้าง JSON แบบนี้เท่านั้น ห้ามมีข้อความอื่น:
+                [
+                  {"Asset": "SCB", "Value_THB": 4681.00, "Profit_THB": 340.07},
+                  {"Asset": "ICHI", "Value_THB": 1470.00, "Profit_THB": 180.00}
+                ]
+                """
+                
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=[prompt, *images]
+                )
+                
                 text = response.text
                 json_start = text.find('[')
                 json_end = text.rfind(']') + 1
@@ -74,29 +72,26 @@ with st.sidebar:
                 st.error(f"เกิดข้อผิดพลาดในการวิเคราะห์ด้วย AI: {e}")
                 return None
 
-        # ปุ่มกดให้ AI เริ่มทำงาน
         if st.button("🧠 ให้ AI วิเคราะห์รูปภาพและอัปเดตพอร์ต"):
-            with st.spinner("กำลังให้ AI วิเคราะห์รูปภาพหลายรูปพร้อมกัน..."):
+            with st.spinner("กำลังให้ AI วิเคราะห์รูปภาพทั้งหมด..."):
                 analysis_results = analyze_images_with_gemini(uploaded_files)
                 if analysis_results:
-                    # อัปเดตตารางพอร์ต
                     df_current = st.session_state.df
                     for result in analysis_results:
                         asset_name = result.get('Asset', '')
-                        if asset_name in df_current['Asset'].values:
-                            # อัปเดตเฉพาะตัวที่ AI เจอ
-                            row_index = df_current[df_current['Asset'] == asset_name].index[0]
-                            df_current.loc[row_index, 'Value_THB'] = result['Value_THB']
-                            df_current.loc[row_index, 'Profit_THB'] = result['Profit_THB']
-                        else:
-                            st.warning(f"สินทรัพย์ชื่อ '{asset_name}' ไม่อยู่ในตารางพอร์ตเริ่มต้น จะข้ามการอัปเดต")
+                        # ค้นหาชื่อสินทรัพย์ที่ตรงกัน
+                        matched_rows = df_current[df_current['Asset'].str.upper() == asset_name.upper()]
+                        if not matched_rows.empty:
+                            row_index = matched_rows.index[0]
+                            df_current.loc[row_index, 'Value_THB'] = float(result['Value_THB'])
+                            df_current.loc[row_index, 'Profit_THB'] = float(result['Profit_THB'])
                     
                     st.session_state.df = df_current
                     st.success("อัปเดตตัวเลขตามรูปภาพเรียบร้อยแล้ว!")
 
     st.divider()
     
-    st.subheader("✏️ แก้ไขยอดเงินเอง (ถ้า AI ดึงไม่ครบ)")
+    st.subheader("✏️ แก้ไขยอดเงินเอง")
     edited_df = st.data_editor(
         st.session_state.df,
         column_config={
@@ -108,9 +103,8 @@ with st.sidebar:
     )
     st.session_state.df = edited_df
 
-# --- ส่วนแสดงผลหลัก ---
+# 4. ส่วนแสดงผลหลัก
 df = st.session_state.df.copy()
-# คำนวณ % Profit
 df['Profit_Pct'] = (df['Profit_THB'] / (df['Value_THB'] - df['Profit_THB'])) * 100
 
 total_value = df['Value_THB'].sum()
@@ -125,16 +119,17 @@ col3.metric("กำไร/ขาดทุนรวม", f"฿{total_profit:,.2f}
 col4.metric("บรรยากาศพอร์ต", "🟢 เขียวขจี" if total_profit > 0 else "🔴 แดงเดือด")
 
 st.divider()
+
 if uploaded_files:
     st.subheader(f"🖼️ รูปภาพที่อัปโหลดล่าสุด ({len(uploaded_files)} รูป)")
-    col_img = st.columns(min(len(uploaded_files), 4))
+    col_img = st.columns(min(len(uploaded_files), 3))
     for i, file in enumerate(uploaded_files):
-        with col_img[i % 4]:
+        with col_img[i % 3]:
             image = Image.open(file)
             st.image(image, caption=f"รูปที่ {i+1}", use_container_width=True)
     st.divider()
-  
-# --- กราฟ ---
+
+# 5. กราฟ
 c1, c2 = st.columns(2)
 
 with c1:
@@ -146,7 +141,6 @@ with c1:
 
 with c2:
     st.subheader("📈 ผลตอบแทน % รายสินทรัพย์")
-    # กำหนดสี: บวก=เขียว, ลบ=แดง
     df['Color'] = df['Profit_Pct'].apply(lambda x: '#10B981' if x >= 0 else '#EF4444')
     fig_bar = px.bar(df, x='Asset', y='Profit_Pct', text_auto='.2f', color='Color', color_discrete_map="identity")
     fig_bar.update_layout(template="plotly_dark", yaxis_title="กำไร (%)", xaxis_title="")
