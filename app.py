@@ -9,7 +9,7 @@ st.set_page_config(
 )
 
 # 🔗 วางลิงก์ CSV จาก Google Sheets ของคุณที่นี่
-SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7u4PJQHrPLgKoCb28f_C4C862tgiMWlXEYkxbjUfipmuKZVG6JhI2vQbMLFPRogMdoSu8v-4eO1k-/pubhtml?gid=11095553&single=true"
+SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7u4PJQHrPLgKoCb28f_C4C862tgiMWlXEYkxbjUfipmuKZVG6JhI2vQbMLFPRogMdoSu8v-4eO1k-/pub?gid=11095553&single=true&output=csv"
 
 
 @st.cache_data(ttl=60)  # ดึงข้อมูลใหม่ทุกๆ 1 นาที
