@@ -6,19 +6,19 @@ import streamlit as st
 
 # ตั้งค่าหน้าตา Dashboard
 st.set_page_config(
-    page_title="Spider-Man's AI Virtual Office",
-    page_icon="🕸️",
+    page_title="Pixel Virtual Office Dashboard",
+    page_icon="🕹️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS ตกแต่งออฟฟิศให้ดูเท่
+# Custom CSS ตกแต่งเพิ่มเติม
 st.markdown(
     """
     <style>
-    .main .block-container { padding-top: 1.5rem; }
+    .main .block-container { padding-top: 1rem; }
     div[data-testid="stMetricValue"] { font-size: 1.8rem; font-weight: bold; }
-    .agent-box { background-color: #1e293b; padding: 15px; border-radius: 10px; color: white; margin-bottom: 10px; }
+    .office-banner { border-radius: 12px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
     </style>
 """,
     unsafe_allow_html=True,
@@ -59,21 +59,17 @@ try:
       axis=1,
   )
 
-  # --- SIDEBAR: ห้องผู้บริหาร (Boss Room) ---
-  st.sidebar.header("🏢 BOSS CONTROL ROOM")
-  st.sidebar.markdown(
-      "**ผู้บริหารสูงสุด:** `คุณ (Big Boss)`"
-  )  # แสดงชื่อคุณคุมออฟฟิศ
-  if st.sidebar.button("🔄 สั่งอัปเดตข้อมูลสำนักงาน"):
+  # Sidebar (ยังคงความคูลของ Spiderman ไว้เหมือนเดิม)
+  st.sidebar.header("⚙️ ตั้งค่า & คัดกรอง")
+  if st.sidebar.button("🔄 อัปเดตข้อมูลทันที"):
     st.cache_data.clear()
     st.rerun()
 
   categories = ["ทั้งหมด"] + list(df["Category"].dropna().unique())
-  selected_cat = st.sidebar.selectbox("🗂️ กรองแผนก/หมวดหมู่:", categories)
+  selected_cat = st.sidebar.selectbox("เลือกหมวดหมู่:", categories)
 
-  # โซนสไปเดอร์แมนคุมหน้าจอ
   st.sidebar.markdown("---")
-  st.sidebar.markdown("### 🕸️ Spider-Man (Head of Security)")
+  st.sidebar.markdown("### 🕸️ Security Guard")
   st.sidebar.image(
       "https://media.giphy.com/media/xTiTnHvXHHxOTcdmxO/giphy.gif", width=200
   )
@@ -90,30 +86,26 @@ try:
   total_cost = total_value - total_profit
   total_return = (total_profit / total_cost * 100) if total_cost != 0 else 0
 
-  # --- MAIN OFFICE HQ ---
-  st.title("🏛️ SPIDER-MAN'S VIRTUAL OFFICE & HQ")
-  st.caption(
-      f"🏢 สถานะสำนักงาน: เปิดทำการ | อัปเดตล่าสุด: {datetime.now().strftime('%d %b %Y, %H:%M')}"
-  )
+  # --- MAIN CONTENT ---
+  st.title("🕹️ PIXEL VIRTUAL OFFICE & INVESTMENT DASHBOARD")
+  st.caption(f"🕒 ข้อมูลล่าสุด: {datetime.now().strftime('%d %b %Y, %H:%M')}")
   st.divider()
 
-  # จำลองสถานะพนักงาน AI ในออฟฟิศ
-  st.subheader("👥 AI Agents Status (ทีมงานประจำสำนักงาน)")
-  ag1, ag2, ag3 = st.columns(3)
-  ag1.info(
-      "🤖 **Data Agent (วิเคราะห์พอร์ต)**\n\nสถานะ: กำลังสแกนความเคลื่อนไหวตลาด"
+  # 🏢 ฝังฉากห้องทำงาน Pixel Art แบบเคลื่อนไหว (Virtual Office Banner)
+  # ใช้วิดีโอ/แอนิเมชันห้องทำงานจำลองเพื่อให้ได้บรรยากาศแบบในเรฟ
+  st.markdown(
+      """
+        <div class="office-banner">
+            <iframe src="https://giphy.com/embed/3oKIPnAiaMCws8nOsE" width="100%" height="280" style="border:none;" allowFullScreen></iframe>
+        </div>
+    """,
+      unsafe_allow_html=True,
   )
-  ag2.success("📈 **Finance Agent (การเงิน)**\n\nสถานะ: คำนวณกำไร-ขาดทุนเรียบร้อย")
-  ag3.warning(
-      "🛡️ **Security Agent (สไปเดอร์แมน)**\n\nสถานะ: เฝ้าระวังความเสี่ยงพอร์ต 24 ชม."
-  )
-
-  st.divider()
 
   # Progress
   GOAL_AMOUNT = 500000.0
   progress_pct = min(total_value / GOAL_AMOUNT, 1.0)
-  st.subheader("🎯 เป้าหมายพอร์ตสำนักงาน (500,000 บาท)")
+  st.subheader("🎯 เป้าหมายพอร์ตระยะยาว (500,000 บาท)")
   st.progress(progress_pct)
   st.caption(
       f"ความคืบหน้า: {progress_pct*100:.2f}% (ขาดอีก"
@@ -133,15 +125,12 @@ try:
   # Top Performer
   if not df_display.empty:
     top_asset = df_display.loc[df_display["Profit_Pct"].idxmax()]
-    st.success(
-        f"🏆 **รายงานจาก AI - ตัวแบกพอร์ตประจำสำนักงาน:**"
-        f" {top_asset['Asset']} ทำกำไรไปแล้ว (+{top_asset['Profit_Pct']:.2f}%)"
-    )
+    st.info(f"🏆 **ตัวแบกพอร์ต:** {top_asset['Asset']} (+{top_asset['Profit_Pct']:.2f}%)")
 
   # Charts
   chart1, chart2 = st.columns(2)
   with chart1:
-    st.subheader("📊 สัดส่วนสินทรัพย์ในออฟฟิศ")
+    st.subheader("📊 สัดส่วนพอร์ต")
     fig_pie = px.pie(
         df_display,
         values="Value_THB",
@@ -151,7 +140,7 @@ try:
     )
     st.plotly_chart(fig_pie, use_container_width=True)
   with chart2:
-    st.subheader("📈 ผลตอบแทน % แต่ละโปรเจกต์/สินทรัพย์")
+    st.subheader("📈 ผลตอบแทน %")
     df_display["Color"] = df_display["Profit_Pct"].apply(
         lambda x: "#10B981" if x >= 0 else "#EF4444"
     )
@@ -166,7 +155,7 @@ try:
     st.plotly_chart(fig_bar, use_container_width=True)
 
   # Table
-  st.subheader("📋 บันทึกข้อมูลสินทรัพย์สำนักงาน")
+  st.subheader("📋 รายละเอียดสินทรัพย์")
   st.dataframe(
       df_display[["Asset", "Category", "Value_THB", "Profit_THB", "Profit_Pct"]],
       column_config={
@@ -179,4 +168,4 @@ try:
   )
 
 except Exception as e:
-  st.error(f"เกิดข้อผิดพลาดในระบบสำนักงาน: {e}")
+  st.error(f"เกิดข้อผิดพลาด: {e}")
