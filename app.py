@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from PIL import Image
-from google import genai
+import google.generativeai as genai
 import json
 
 # 1. ตั้งค่าหน้าเว็บ
@@ -49,7 +49,9 @@ with st.sidebar:
         
         def analyze_images_with_gemini(files, api_key):
             try:
-                client = genai.Client(api_key=api_key.strip())
+                # กำหนดค่า API Key และเรียกใช้โมเดล
+                genai.configure(api_key=api_key.strip())
+                model = genai.GenerativeModel('gemini-1.5-flash')
                 
                 images = [Image.open(file) for file in files]
                 
@@ -66,11 +68,8 @@ with st.sidebar:
                 ]
                 """
                 
-                contents = [prompt] + images
-                response = client.models.generate_content(
-                    model='gemini-1.5-flash',
-                    contents=contents,
-                )
+                content = [prompt] + images
+                response = model.generate_content(content)
                 
                 text = response.text
                 json_start = text.find('[')
