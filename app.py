@@ -6,18 +6,19 @@ import streamlit as st
 
 # ตั้งค่าหน้าตา Dashboard
 st.set_page_config(
-    page_title="Investment Dashboard",
-    page_icon="📈",
+    page_title="Spider-Man's AI Virtual Office",
+    page_icon="🕸️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS เพื่อความสวยงาม
+# Custom CSS ตกแต่งออฟฟิศให้ดูเท่
 st.markdown(
     """
     <style>
     .main .block-container { padding-top: 1.5rem; }
     div[data-testid="stMetricValue"] { font-size: 1.8rem; font-weight: bold; }
+    .agent-box { background-color: #1e293b; padding: 15px; border-radius: 10px; color: white; margin-bottom: 10px; }
     </style>
 """,
     unsafe_allow_html=True,
@@ -58,23 +59,24 @@ try:
       axis=1,
   )
 
-  # Sidebar
-  st.sidebar.header("⚙️ ตั้งค่า & คัดกรอง")
-  if st.sidebar.button("🔄 อัปเดตข้อมูลทันที"):
+  # --- SIDEBAR: ห้องผู้บริหาร (Boss Room) ---
+  st.sidebar.header("🏢 BOSS CONTROL ROOM")
+  st.sidebar.markdown(
+      "**ผู้บริหารสูงสุด:** `คุณ (Big Boss)`"
+  )  # แสดงชื่อคุณคุมออฟฟิศ
+  if st.sidebar.button("🔄 สั่งอัปเดตข้อมูลสำนักงาน"):
     st.cache_data.clear()
     st.rerun()
 
   categories = ["ทั้งหมด"] + list(df["Category"].dropna().unique())
-  selected_cat = st.sidebar.selectbox("เลือกหมวดหมู่:", categories)
+  selected_cat = st.sidebar.selectbox("🗂️ กรองแผนก/หมวดหมู่:", categories)
 
-  # --- Spiderman ใน Sidebar (ดึงจากลิงก์ที่คุณเลือกมา) ---
+  # โซนสไปเดอร์แมนคุมหน้าจอ
   st.sidebar.markdown("---")
-  st.sidebar.markdown("### 🕸️ Spider-Man is watching!")
-  # ใช้ลิงก์ที่ถูกต้องและสมบูรณ์เพื่อให้แสดงผลได้แน่นอน
+  st.sidebar.markdown("### 🕸️ Spider-Man (Head of Security)")
   st.sidebar.image(
       "https://media.giphy.com/media/xTiTnHvXHHxOTcdmxO/giphy.gif", width=200
   )
-  # -----------------------------------------------
 
   df_display = (
       df[df["Category"] == selected_cat]
@@ -88,15 +90,30 @@ try:
   total_cost = total_value - total_profit
   total_return = (total_profit / total_cost * 100) if total_cost != 0 else 0
 
-  # Content
-  st.title("🚀 INVESTMENT DASHBOARD")
-  st.caption(f"🕒 ข้อมูลล่าสุด: {datetime.now().strftime('%d %b %Y, %H:%M')}")
+  # --- MAIN OFFICE HQ ---
+  st.title("🏛️ SPIDER-MAN'S VIRTUAL OFFICE & HQ")
+  st.caption(
+      f"🏢 สถานะสำนักงาน: เปิดทำการ | อัปเดตล่าสุด: {datetime.now().strftime('%d %b %Y, %H:%M')}"
+  )
+  st.divider()
+
+  # จำลองสถานะพนักงาน AI ในออฟฟิศ
+  st.subheader("👥 AI Agents Status (ทีมงานประจำสำนักงาน)")
+  ag1, ag2, ag3 = st.columns(3)
+  ag1.info(
+      "🤖 **Data Agent (วิเคราะห์พอร์ต)**\n\nสถานะ: กำลังสแกนความเคลื่อนไหวตลาด"
+  )
+  ag2.success("📈 **Finance Agent (การเงิน)**\n\nสถานะ: คำนวณกำไร-ขาดทุนเรียบร้อย")
+  ag3.warning(
+      "🛡️ **Security Agent (สไปเดอร์แมน)**\n\nสถานะ: เฝ้าระวังความเสี่ยงพอร์ต 24 ชม."
+  )
+
   st.divider()
 
   # Progress
   GOAL_AMOUNT = 500000.0
   progress_pct = min(total_value / GOAL_AMOUNT, 1.0)
-  st.subheader("🎯 เป้าหมายพอร์ตระยะยาว (500,000 บาท)")
+  st.subheader("🎯 เป้าหมายพอร์ตสำนักงาน (500,000 บาท)")
   st.progress(progress_pct)
   st.caption(
       f"ความคืบหน้า: {progress_pct*100:.2f}% (ขาดอีก"
@@ -116,15 +133,15 @@ try:
   # Top Performer
   if not df_display.empty:
     top_asset = df_display.loc[df_display["Profit_Pct"].idxmax()]
-    st.info(
-        f"🏆 **ตัวแบกพอร์ต:** {top_asset['Asset']}"
-        f" (+{top_asset['Profit_Pct']:.2f}%)"
+    st.success(
+        f"🏆 **รายงานจาก AI - ตัวแบกพอร์ตประจำสำนักงาน:**"
+        f" {top_asset['Asset']} ทำกำไรไปแล้ว (+{top_asset['Profit_Pct']:.2f}%)"
     )
 
   # Charts
   chart1, chart2 = st.columns(2)
   with chart1:
-    st.subheader("📊 สัดส่วนพอร์ต")
+    st.subheader("📊 สัดส่วนสินทรัพย์ในออฟฟิศ")
     fig_pie = px.pie(
         df_display,
         values="Value_THB",
@@ -134,7 +151,7 @@ try:
     )
     st.plotly_chart(fig_pie, use_container_width=True)
   with chart2:
-    st.subheader("📈 ผลตอบแทน %")
+    st.subheader("📈 ผลตอบแทน % แต่ละโปรเจกต์/สินทรัพย์")
     df_display["Color"] = df_display["Profit_Pct"].apply(
         lambda x: "#10B981" if x >= 0 else "#EF4444"
     )
@@ -149,7 +166,7 @@ try:
     st.plotly_chart(fig_bar, use_container_width=True)
 
   # Table
-  st.subheader("📋 รายละเอียดสินทรัพย์")
+  st.subheader("📋 บันทึกข้อมูลสินทรัพย์สำนักงาน")
   st.dataframe(
       df_display[["Asset", "Category", "Value_THB", "Profit_THB", "Profit_Pct"]],
       column_config={
@@ -162,4 +179,4 @@ try:
   )
 
 except Exception as e:
-  st.error(f"เกิดข้อผิดพลาด: {e}")
+  st.error(f"เกิดข้อผิดพลาดในระบบสำนักงาน: {e}")
