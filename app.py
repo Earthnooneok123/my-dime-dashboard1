@@ -2,16 +2,20 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from PIL import Image
-from google import genai
-from google.genai import types
+import openai
 import json
+import base64
 
 # 1. ตั้งค่าหน้าเว็บ
 st.set_page_config(
-    page_title="Gemini-Powered Investment Dashboard",
+    page_title="Investment Dashboard (OpenAI Powered)",
     page_icon="📈",
     layout="wide"
 )
+
+# 2. ระบุ OpenAI API Key ในโค้ดโดยตรง
+# ⚠️ เปลี่ยนใส่ OpenAI API Key ชุดใหม่ของคุณตรงนี้
+OPENAI_API_KEY = "sk-proj-ใส่คีย์ใหม่ของคุณตรงนี้"
 
 if 'df' not in st.session_state:
     default_data = {
@@ -22,17 +26,17 @@ if 'df' not in st.session_state:
     }
     st.session_state.df = pd.DataFrame(default_data)
 
-st.title("🚀 GEMINI-POWERED INVESTMENT DASHBOARD")
+st.title("🚀 INVESTMENT DASHBOARD (OPENAI VISION)")
 st.caption("AI วิเคราะห์รูปสลิป/หน้าจอ Dime! หลายรูปพร้อมกัน และอัปเดตตัวเลขแบบเรียลไทม์")
 st.divider()
 
-# 2. แถบด้านข้าง (Sidebar)
+# ฟังก์ชันแปลงรูปภาพเป็น Base64
+def encode_image(file):
+    return base64.b64encode(file.getvalue()).decode('utf-8')
+
+# 3. แถบด้านข้าง (Sidebar)
 with st.sidebar:
-    st.header("⚙️ ตั้งค่า & จัดการพอร์ต")
-    
-    api_key_input = st.text_input("🔑 ใส่ Gemini API Key ของคุณ:", type="password", help="วางคีย์ของคุณตรงนี้")
-    
-    st.divider()
+    st.header("⚙️ จัดการพอร์ตด้วย AI")
     
     st.subheader("📸 อัปโหลดรูปภาพหลายรูปพร้อมกัน")
     uploaded_files = st.file_uploader("เลือกรูปภาพสลิป/หน้าจอพอร์ต Dime!", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
@@ -42,48 +46,58 @@ with st.sidebar:
     if uploaded_files:
         st.write(f"พบ {len(uploaded_files)} รูปภาพ...")
         
-        def analyze_images_with_gemini(files, user_key):
+        def analyze_images_with_openai(files, api_key):
             try:
-                # ปรับแต่ง Client ให้รองรับทุกลักษณะ Key
-                client = genai.Client(
-                    api_key=user_key.strip(),
-                    http_options=types.HttpOptions(api_version='v1alpha')
-                )
-                images = [Image.open(file) for file in files]
+                client = openai.OpenAI(api_key=api_key.strip())
                 
-                prompt = """
-                วิเคราะห์รูปภาพสลิปหรือหน้าจอพอร์ต Dime! ทั้งหมดนี้ และดึงข้อมูลมูลค่ากับกำไร/ขาดทุนของสินทรัพย์แต่ละตัวออกมาเป็น JSON:
-                1. Asset: ชื่อสินทรัพย์ (เช่น SP50001, NDX01, VOO, SCB, ICHI, MANU)
-                2. Value_THB: มูลค่าปัจจุบัน (เป็นตัวเลข THB เท่านั้น)
-                3. Profit_THB: กำไร/ขาดทุน (เป็นตัวเลข THB ถ้าขาดทุนให้ติดลบ)
+                content_payload = [
+                    {
+                        "type": "text",
+                        "text": """
+                        วิเคราะห์รูปภาพสลิปหรือหน้าจอพอร์ต Dime! ทั้งหมดนี้ และดึงข้อมูลมูลค่ากับกำไร/ขาดทุนของสินทรัพย์แต่ละตัวออกมาเป็น JSON:
+                        1. Asset: ชื่อสินทรัพย์ (เช่น SP50001, NDX01, VOO, SCB, ICHI, MANU)
+                        2. Value_THB: มูลค่าปัจจุบัน (เป็นตัวเลข THB เท่านั้น)
+                        3. Profit_THB: กำไร/ขาดทุน (เป็นตัวเลข THB ถ้าขาดทุนให้ติดลบ)
 
-                ส่งคืนผลลัพธ์เป็นโครงสร้าง JSON แบบนี้เท่านั้น ห้ามมีข้อความอื่น:
-                [
-                  {"Asset": "SCB", "Value_THB": 4681.00, "Profit_THB": 340.07},
-                  {"Asset": "ICHI", "Value_THB": 1470.00, "Profit_THB": 180.00}
+                        ส่งคืนผลลัพธ์เป็นโครงสร้าง JSON array แบบนี้เท่านั้น ห้ามมีข้อความอื่น:
+                        [
+                          {"Asset": "SCB", "Value_THB": 4681.00, "Profit_THB": 340.07},
+                          {"Asset": "ICHI", "Value_THB": 1470.00, "Profit_THB": 180.00}
+                        ]
+                        """
+                    }
                 ]
-                """
                 
-                response = client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=[prompt, *images]
+                for file in files:
+                    base64_img = encode_image(file)
+                    content_payload.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{base64_img}"
+                        }
+                    })
+
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": content_payload}],
+                    max_tokens=1000
                 )
                 
-                text = response.text
+                text = response.choices[0].message.content
                 json_start = text.find('[')
                 json_end = text.rfind(']') + 1
                 json_string = text[json_start:json_end]
                 return json.loads(json_string)
             except Exception as e:
-                st.error(f"เกิดข้อผิดพลาดในการวิเคราะห์ด้วย AI: {e}")
+                st.error(f"เกิดข้อผิดพลาดในการวิเคราะห์ด้วย OpenAI: {e}")
                 return None
 
         if st.button("🧠 ให้ AI วิเคราะห์รูปภาพและอัปเดตพอร์ต"):
-            if not api_key_input:
-                st.warning("⚠️ กรุณาใส่ Gemini API Key ในช่องด้านบนก่อนครับ")
+            if not OPENAI_API_KEY or "ใส่คีย์ใหม่" in OPENAI_API_KEY:
+                st.warning("⚠️ กรุณาใส่ OpenAI API Key ในบรรทัดที่ 16 ของไฟล์ app.py ก่อนครับ")
             else:
-                with st.spinner("กำลังให้ AI วิเคราะห์รูปภาพทั้งหมด..."):
-                    analysis_results = analyze_images_with_gemini(uploaded_files, api_key_input)
+                with st.spinner("กำลังให้ OpenAI วิเคราะห์รูปภาพทั้งหมด..."):
+                    analysis_results = analyze_images_with_openai(uploaded_files, OPENAI_API_KEY)
                     if analysis_results:
                         df_current = st.session_state.df
                         for result in analysis_results:
@@ -111,7 +125,7 @@ with st.sidebar:
     )
     st.session_state.df = edited_df
 
-# 3. ส่วนแสดงผลหลัก
+# 4. ส่วนแสดงผลหลัก
 df = st.session_state.df.copy()
 df['Profit_Pct'] = (df['Profit_THB'] / (df['Value_THB'] - df['Profit_THB'])) * 100
 
@@ -137,7 +151,7 @@ if uploaded_files:
             st.image(image, caption=f"รูปที่ {i+1}", use_container_width=True)
     st.divider()
 
-# 4. กราฟ
+# 5. กราฟ
 c1, c2 = st.columns(2)
 
 with c1:
